@@ -5,6 +5,7 @@ package com.gcit.library.main;
 import java.sql.SQLException;
 import java.util.Scanner;
 
+import com.gict.library.controller.BorrowerController;
 import com.gict.library.controller.LibrarianController;
 
 /**
@@ -17,16 +18,23 @@ public class Main {
 	 */
 	public static Scanner sc = new Scanner(System.in);
 	public static LibrarianController libirarianController = new LibrarianController();
+	public static BorrowerController borrowerController = new BorrowerController();
+	
 	private static final String driver = "com.mysql.cj.jdbc.Driver";
 	private static final String url = "jdbc:mysql://localhost/library";
 	private static final String username = "root";
 	private static final String pwd = "wu134679";
 	
 	public static void main(String[] args) {
-		mainMenu();
+		try {
+			mainMenu();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
-	public static void mainMenu() {
+	public static void mainMenu() throws SQLException {
 		System.out.println("Welcome to the GCIT Library Management System. Which category of a user are you?");
 		System.out.println("1) Librarian\n" + "2) Administrator\n" + "3) Borrower\n");
 		while(true) {
@@ -35,10 +43,10 @@ public class Main {
 				libirarianController.LibrarianMainMenu();
 				break;
 			case 2:
-				System.out.println("Administrator");
+				System.out.println("Admin");
 				break;
 			case 3:
-				System.out.println("Borrower");
+				borrowerController.BorrowerMainMenu();
 				break;
 			default:
 				System.out.println("You must enter a number from 1 to 3");
