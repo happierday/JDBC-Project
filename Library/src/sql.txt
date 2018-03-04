@@ -15,3 +15,9 @@ get loan for specific borrower, book and branch
 select loans.bookId,loans.branchId,loans.cardNo, book.title from tbl_book_loans loans
 join tbl_book book on book.bookId = loans.bookId
 where loans.bookId = 2 and loans.branchId = 3 and loans.cardNo = 12 and loans.dateIn is null;
+
+get loan detail
+select book.title, borrower.name,branch.branchName, loans.dueDate from tbl_book_loans loans
+join tbl_book book on book.bookId = loans.bookId
+join tbl_library_branch branch on branch.branchId = loans.branchId
+join tbl_borrower borrower on borrower.cardNo = loans.cardNo; 

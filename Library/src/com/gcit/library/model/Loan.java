@@ -3,6 +3,8 @@
  */
 package com.gcit.library.model;
 
+import java.time.LocalDate;
+
 /**
  * @author jianwu
  *
@@ -12,6 +14,9 @@ public class Loan {
 	private int branchId;
 	private int cardNo;
 	private String bookTitle;
+	private String branchName;
+	private String borrowerName;
+	private LocalDate dueDate;
 	public int getBookId() {
 		return bookId;
 	}
@@ -36,4 +41,22 @@ public class Loan {
 	public void setBookTitle(String bookTitle) {
 		this.bookTitle = bookTitle;
 	}
+	public String getBorrowerName() {
+		return borrowerName;
+	}
+	public void setBorrowerName(String borrowerName) {
+		this.borrowerName = borrowerName;
+	}
+	public LocalDate getDueDate() {
+		return dueDate;
+	}
+	public void setDueDate(LocalDate dueDate) {
+		this.dueDate = dueDate;
+	}
+	public String getBranchName() {
+		return branchName;
+	}
+	public void setBranchName(String branchName) {
+		this.branchName = branchName;
+	}	
 }

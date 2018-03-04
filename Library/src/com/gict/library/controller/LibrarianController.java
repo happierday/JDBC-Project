@@ -16,12 +16,14 @@ import com.gcit.library.model.Branch;
 import com.gcit.library.model.Librarian;
 
 /**
+ * Entire Librarian controller, separated out each functionalities
  * @author jianwu
  *
  */
 public class LibrarianController {
 	
 	private Librarian librarian;
+	private Branch branch;
 	private LinkedList<Branch> branchList = new LinkedList<Branch>();
 	private LinkedList<Book> bookList = new LinkedList<Book>();
 	private int choice;
@@ -29,27 +31,29 @@ public class LibrarianController {
 	private String driver = Main.getDriver();
 	private String username = Main.getUsername();
 	private String pwd = Main.getPwd();
-	@SuppressWarnings("finally")
 	public void LibrarianMainMenu() throws SQLException {
-		librarian = new Librarian();
-		System.out.println("1) Enter Branch you manage\n" + "2) go back\n");
-		//choice = Main.sc.nextInt();
 		while(true) {
-			switch(Main.sc.nextInt()) {
-				case 1: 
-					try {
-						LibrarianOp1();
-					} catch (SQLException e) {
-						e.printStackTrace();
-					}
+			choice = 0;
+			librarian = new Librarian();
+			System.out.println("1) Enter Branch you manage\n" + "2) go back\n");
+			while(true) {
+				if(choice != 0) {
 					break;
-				case 2:
-					//if go back, clean up librarian
-					librarian = null;
-					Main.mainMenu();
-					break;
-				default:
-					System.out.println("You must enter a number from 1 to 2!");
+				}
+				switch(Main.sc.next()) {
+					case "1": 
+						choice = 1;
+						break;
+					case "2":
+						//if go back, clean up librarian
+						librarian = null;
+						return;
+					default:
+						System.out.println("You must enter a number from 1 to 2!");
+				}
+			}
+			if(choice == 1) {
+				LibrarianOp1();
 			}
 		}
 	}
@@ -59,24 +63,35 @@ public class LibrarianController {
 	 */
 	
 	public void LibrarianOp1() throws SQLException {
-		getLibraryBranch();
-		int size = branchList.size();
-		
 		while(true) {
-			choice = Main.sc.nextInt();
-			if(choice > 0 && choice <= size) {
-				librarian.setBranchIndex(choice);
-				LibrarianOp2();
-				break;
-			}else if(choice == size+1){
-				//if choose to go back, clean up list and librarian
-				librarian = null;
-				branchList.clear();
-				LibrarianMainMenu();
-				break;
-			}else {
-				System.out.println("Please enter a number between 1 and " + (size+1)+ "!");
+			getLibraryBranch();
+			int size = branchList.size();
+			choice = 0;
+			while(true) {
+				if(choice > 0) {
+					break;
+				}
+				if(Main.sc.hasNextInt()) {
+					choice = Main.sc.nextInt();
+					if(choice > 0 && choice <= size) {
+						librarian.setBranchIndex(choice-1);
+						branch = branchList.get(choice-1);
+						break;
+					}else if(choice == size+1){
+						//if choose to go back, clean up list and librarian
+						librarian = null;
+						branchList.clear();
+						return;
+					}else {
+						choice = 0;
+						System.out.println("Please enter a number between 1 and " + (size+1)+ "!");
+					}
+				}else {
+					System.out.println("Please enter a number!");
+					Main.sc.next();
+				}
 			}
+			LibrarianOp2();
 		}
 	}
 	
@@ -108,34 +123,38 @@ public class LibrarianController {
 		}
 	}
 	
-	public void LibrarianOp2() {
-		System.out.println("1) Update the details of the Library \n" + 
-				"2) Add copies of Book to the Branch\n" +
-				"3) Quit to previous\n");
-		while(true) {
-			choice = Main.sc.nextInt();
-			try {
-				switch(choice) {
-				case 1:
-					updateBranch(branchList.get(librarian.getBranchIndex()-1));
+	public void LibrarianOp2() throws SQLException {
+		while (true) {
+			System.out.println("1) Update the details of the Library \n" + "2) Add copies of Book to the Branch\n"
+					+ "3) Quit to previous\n");
+			choice = 0;
+			while (true) {
+				if(choice!=0) {
 					break;
-				case 2:
-					manageBooks(branchList.get(librarian.getBranchIndex()-1));
-					break;
-				case 3:
-					LibrarianOp1();
-					break;
-				default:
-					System.out.println("Pleaase enter a number from 1 to 3");
 				}
-			} catch(SQLException e) {
-				e.printStackTrace();
+				switch (Main.sc.next()) {
+					case "1":
+						choice = 1;
+						break;
+					case "2":
+						choice = 2;
+						break;
+					case "3":
+						return;
+					default:
+						System.out.println("Pleaase enter a number from 1 to 3");
+				}
+			}
+			if(choice == 1) {
+				updateBranch();
+			}else {
+				manageBooks();
 			}
 		}
 		
 	}
 	
-	public void updateBranch(Branch branch) throws SQLException {
+	public void updateBranch() throws SQLException {
 		String s = "";
 		
 		System.out.println("You have chosen to update the Branch with Branch Id: " + branch.getId()
@@ -146,7 +165,6 @@ public class LibrarianController {
 		s = Main.sc.nextLine();
 		//System.out.println(s);
 		if(s.toLowerCase().compareTo("quit") == 0){
-			LibrarianOp2();
 			return;
 		}
 		if(s.compareTo("N/A") != 0) {
@@ -155,7 +173,6 @@ public class LibrarianController {
 		System.out.println("Please enter new branch address or enter N/A for no change: ");
 		s = Main.sc.nextLine();
 		if(s.toLowerCase().compareTo("quit") == 0){
-			LibrarianOp2();
 			return;
 		}
 		if(s.compareTo("N/A") != 0) {
@@ -179,22 +196,21 @@ public class LibrarianController {
 			if(cnn != null) {
 				cnn.rollback();
 				System.out.println("DB Roll Back due to error! Back to previous Menu!");
-				LibrarianOp2();
 				return;
 			}
 		} finally {
 			if(cnn != null) {
 				cnn.commit();
+				System.out.println("Branch Updated!");
 				cnn.close();
 				System.out.println("DB connection closed");
-				LibrarianOp2();
 				return;
 			}
 		}
 	}
 	
 	
-	public void getBooks(Branch branch) throws SQLException {
+	public void getBooks() throws SQLException {
 		Connection cnn = null;
 		bookList.clear();
 		try {
@@ -226,7 +242,7 @@ public class LibrarianController {
 				book.setAuthorId(rs.getInt(4));
 				book.setTitle(rs.getString(5));
 				book.setNumOfCopies(rs.getInt(6));
-				System.out.println(index + ") " + book.getTitle());
+				System.out.println(index + ") " + book.getTitle() + ", now has " + book.getNumOfCopies() + " copies! ");
 				bookList.add(book);
 			}
 			System.out.println((bookList.size()+1) + ") go back");
@@ -235,7 +251,6 @@ public class LibrarianController {
 			if(cnn != null) {
 				cnn.rollback();
 				System.out.println("DB Roll Back due to error! Back to previous Menu!");
-				LibrarianOp2();
 				return;
 			}
 		} finally {
@@ -247,17 +262,16 @@ public class LibrarianController {
 		}
 	}
 	
-	public void manageBooks(Branch branch) throws SQLException {
+	public void manageBooks() throws SQLException {
 		System.out.println("Pick the Book you want to add copies of, to your branch: ");
-		getBooks(branch);
+		getBooks();
 		int n = Main.sc.nextInt();
 		while(true) {
 			if(n <= bookList.size() + 1 && n > 0) {
 				if(n == bookList.size() + 1) {
-					LibrarianOp2();
-					
+					return;
 				}else {
-					updateBook(bookList.get(n),n);
+					updateBook(bookList.get(n-1),n);
 				}
 				return;
 			}else {
@@ -271,7 +285,18 @@ public class LibrarianController {
 		System.out.println("Existing number of copies for " + book.getTitle() + ": " +
 							book.getNumOfCopies());
 		System.out.println("Enter a new number of copies: ");
-		int n = Main.sc.nextInt();
+		choice = 0;
+		while(true) {
+			if(choice > 0) {
+				break;
+			}
+			if(Main.sc.hasNextInt()) {
+				choice = Main.sc.nextInt();
+			}else {
+				System.out.println("Please enter a positive number: ");
+				Main.sc.next();
+			}
+		}
 		try {
 			Class.forName(driver);
 			cnn = DriverManager.getConnection(url,username,pwd);
@@ -279,7 +304,7 @@ public class LibrarianController {
 			String sql = "update tbl_book_copies set noOfCopies = ?\n" + 
 					"where bookId = ? and branchId = ?;";
 			PreparedStatement pstate = cnn.prepareStatement(sql);
-			pstate.setInt(1, n);
+			pstate.setInt(1, choice);
 			pstate.setInt(2, book.getBookId());
 			pstate.setInt(3, book.getBranchId());
 			pstate.execute();
@@ -288,17 +313,15 @@ public class LibrarianController {
 			if(cnn != null) {
 				cnn.rollback();
 				System.out.println("DB Roll Back due to error! Back to previous Menu!");
-				manageBooks(branchList.get(librarian.getBranchIndex()-1));
 				return;
 			}
 		} finally {
 			if(cnn != null) {
 				cnn.commit();
-				System.out.println("updated!");
+				System.out.println("Book copied updated!");
 				cnn.close();
 				System.out.println("DB connection closed");
 			}
-			LibrarianOp2();
 		}
 	}
 	public Librarian getLibrarian() {
