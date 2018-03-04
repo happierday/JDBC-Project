@@ -1,0 +1,17 @@
+get book details
+select 
+	tbl_book_copies.bookId,
+    tbl_book_copies.branchId,
+    tbl_book.pubId,
+    tbl_book_authors.authorId,
+    tbl_book.title,
+    tbl_book_copies.noOfCopies
+from tbl_book_copies
+join tbl_book on tbl_book.bookId = tbl_book_copies.bookId
+join tbl_book_authors on tbl_book.bookId = tbl_book_authors.bookId
+where tbl_book_copies.branchId = 4;
+
+get loan for specific borrower, book and branch
+select loans.bookId,loans.branchId,loans.cardNo, book.title from tbl_book_loans loans
+join tbl_book book on book.bookId = loans.bookId
+where loans.bookId = 2 and loans.branchId = 3 and loans.cardNo = 12 and loans.dateIn is null;
