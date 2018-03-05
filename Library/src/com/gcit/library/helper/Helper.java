@@ -22,6 +22,7 @@ import com.gcit.library.model.Publisher;
  * @author jianwu
  *
  */
+
 public class Helper {
 
 	private String url = Main.getUrl();
@@ -160,6 +161,7 @@ public class Helper {
 				System.out.println(index + ") " + temp.getTitle());
 			}
 			System.out.println((index+1)+") go back" );
+			return list;
 		} catch (ClassNotFoundException | SQLException e) {
 			e.printStackTrace();
 			if(cnn != null) {
@@ -172,7 +174,7 @@ public class Helper {
 				System.out.println("DB connection closed");
 			}
 		}
-		return list;
+		return null;
 	}
 	
 	/**
@@ -282,11 +284,264 @@ public class Helper {
 		} finally {
 			if(cnn != null) {
 				cnn.commit();
-				System.out.println("Updated borrower table!");
+				System.out.println("Updated table!");
 				cnn.close();
 				System.out.println("DB connection closed");
 			}
 		}
+	}
+	
+	public void updateBooks(int choice, Book book) throws SQLException {
+		Connection cnn = null;
+		try {
+			Class.forName(driver);
+			cnn = DriverManager.getConnection(url,username,pwd);
+			cnn.setAutoCommit(false);
+			String sql = "update tbl_book_copies set noOfCopies = ?\n" + 
+					"where bookId = ? and branchId = ?;";
+			PreparedStatement pstate = cnn.prepareStatement(sql);
+			pstate.setInt(1, choice);
+			pstate.setInt(2, book.getBookId());
+			pstate.setInt(3, book.getBranchId());
+			pstate.execute();
+		} catch (ClassNotFoundException | SQLException e) {
+			e.printStackTrace();
+			if(cnn != null) {
+				cnn.rollback();
+				System.out.println("DB Roll Back due to error! Back to previous Menu!");
+				return;
+			}
+		} finally {
+			if(cnn != null) {
+				cnn.commit();
+				System.out.println("Book copied updated!");
+				cnn.close();
+				System.out.println("DB connection closed");
+			}
+		}
+	}
+	
+	public LinkedList<Book> getBooksForBorrower(Branch branch, Borrower borrower) throws SQLException{
+		Connection cnn = null;
+		LinkedList<Book> bookList = new LinkedList<Book>();
+		try {
+			Class.forName(driver);
+			cnn = DriverManager.getConnection(url,username,pwd);
+			cnn.setAutoCommit(false);
+			String sql = "select \n" + 
+					"	tbl_book_copies.bookId,\n" + 
+					"    tbl_book_copies.branchId,\n" +
+					"    tbl_book.title,\n" + 
+					"    tbl_book_copies.noOfCopies\n" + 
+					"from tbl_book_copies\n" + 
+					"join tbl_book on tbl_book.bookId = tbl_book_copies.bookId\n" + 
+					"where tbl_book_copies.branchId = ?;";
+			PreparedStatement pstate = cnn.prepareStatement(sql);
+			pstate.setInt(1, branch.getId());
+			ResultSet rs = pstate.executeQuery();
+			Book book;
+			int index = 0;
+			while(rs.next()) {
+				index ++;
+				book = new Book();
+				book.setBookId(rs.getInt(1));
+				book.setBranchId(rs.getInt(2));
+				book.setTitle(rs.getString(3));
+				book.setNumOfCopies(rs.getInt(4));
+				System.out.println(index + ") " + book.getTitle() + ", copies left: " + book.getNumOfCopies());
+				bookList.add(book);
+			}
+			System.out.println((bookList.size()+1) + ") go back");
+			return bookList;
+		} catch (ClassNotFoundException | SQLException e) {
+			e.printStackTrace();
+			if(cnn != null) {
+				cnn.rollback();
+				System.out.println("DB Roll Back due to error! Back to previous Menu!");
+			}
+		} finally {
+			if(cnn != null) {
+				cnn.close();
+				System.out.println("DB connection closed");
+			}
+		}
+		return null;
+	}
+	
+	public LinkedList<Book> getBooksForBranch(Branch branch) throws SQLException {
+		Connection cnn = null;
+		LinkedList<Book> bookList = new LinkedList<Book>();
+		try {
+			Class.forName(driver);
+			cnn = DriverManager.getConnection(url,username,pwd);
+			cnn.setAutoCommit(false);
+			String sql  = "select \n" + 
+						"	tbl_book_copies.bookId,\n" + 
+						"    tbl_book_copies.branchId,\n" + 
+						"    tbl_book.pubId,\n" + 
+						"    tbl_book_authors.authorId,\n" + 
+						"    tbl_book.title,\n" + 
+						"    tbl_book_copies.noOfCopies\n" + 
+						"from tbl_book_copies\n" + 
+						"join tbl_book on tbl_book.bookId = tbl_book_copies.bookId\n" + 
+						"join tbl_book_authors on tbl_book.bookId = tbl_book_authors.bookId\n" + 
+						"where tbl_book_copies.branchId = ?;";
+			PreparedStatement pstate = cnn.prepareStatement(sql);
+			pstate.setInt(1, branch.getId());
+			ResultSet rs = pstate.executeQuery();
+			Book book;
+			int index = 0;
+			while(rs.next()) {
+				index ++;
+				book = new Book();
+				book.setBookId(rs.getInt(1));
+				book.setBranchId(rs.getInt(2));
+				book.setPubId(rs.getInt(3));
+				book.setAuthorId(rs.getInt(4));
+				book.setTitle(rs.getString(5));
+				book.setNumOfCopies(rs.getInt(6));
+				System.out.println(index + ") " + book.getTitle() + ", now has " + book.getNumOfCopies() + " copies! ");
+				bookList.add(book);
+			}
+			System.out.println((bookList.size()+1) + ") go back");
+			return bookList;
+		} catch (ClassNotFoundException | SQLException e) {
+			e.printStackTrace();
+			if(cnn != null) {
+				cnn.rollback();
+				System.out.println("DB Roll Back due to error! Back to previous Menu!");
+			}
+		} finally {
+			if(cnn != null) {
+				cnn.commit();
+				cnn.close();
+				System.out.println("DB connection closed");
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * Can't use update table, because branch needs to update two cols
+	 * @param name
+	 * @param address
+	 * @throws SQLException 
+	 */
+	public void updateBranchTable(String name, String address, int id) throws SQLException {
+		Connection cnn = null;
+		try {
+			Class.forName(driver);
+			cnn = DriverManager.getConnection(url,username,pwd);
+			cnn.setAutoCommit(false);
+			String sql = "update tbl_library_branch set branchName = ? , branchAddress = ? where branchId = ?";
+			PreparedStatement pstate = cnn.prepareStatement(sql);
+			pstate.setString(1, name);
+			pstate.setString(2, address);
+			pstate.setInt(3, id);
+			pstate.execute();
+		} catch (ClassNotFoundException | SQLException e) {
+			e.printStackTrace();
+			if(cnn != null) {
+				cnn.rollback();
+				System.out.println("DB Roll Back due to error! Back to previous Menu!");
+			}
+		} finally {
+			if(cnn != null) {
+				cnn.commit();
+				System.out.println("Updated table!");
+				cnn.close();
+				System.out.println("DB connection closed");
+			}
+		}
+	}
+	
+	public boolean insertPublisherTable(String name, String address, String phone) throws SQLException {
+		Connection cnn = null;
+		try {
+			Class.forName(driver);
+			cnn = DriverManager.getConnection(url,username,pwd);
+			cnn.setAutoCommit(false);
+			String sql = "insert into tbl_publisher (publisherName,publisherAddress,publisherPhone) value(?,?,?)";
+			PreparedStatement pstate = cnn.prepareStatement(sql);
+			pstate.setString(1, name);
+			pstate.setString(2, address);
+			pstate.setString(3, phone);
+			pstate.execute();	
+			return true;
+		} catch (ClassNotFoundException | SQLException e) {
+			e.printStackTrace();
+			if(cnn!=null) {
+				cnn.rollback();
+				System.out.println("DB eror, roll back!");
+			}
+		} finally {
+			if(cnn != null) {
+				cnn.commit();
+				System.out.println("Borrower table inserted!");
+				cnn.close();
+				System.out.println("DB closed!");
+			}
+		}
+		return false;
+	}
+	
+	public boolean insertBorrowerTable(String name, String address, String phone) throws SQLException {
+		Connection cnn = null;
+		try {
+			Class.forName(driver);
+			cnn = DriverManager.getConnection(url,username,pwd);
+			cnn.setAutoCommit(false);
+			String sql = "insert into tbl_borrower (name,address,phone) value(?,?,?)";
+			PreparedStatement pstate = cnn.prepareStatement(sql);
+			pstate.setString(1, name);
+			pstate.setString(2, address);
+			pstate.setString(3, phone);
+			pstate.execute();	
+			return true;
+		} catch (ClassNotFoundException | SQLException e) {
+			e.printStackTrace();
+			if(cnn!=null) {
+				cnn.rollback();
+				System.out.println("DB eror, roll back!");
+			}
+		} finally {
+			if(cnn != null) {
+				cnn.commit();
+				System.out.println("Borrower table inserted!");
+				cnn.close();
+				System.out.println("DB closed!");
+			}
+		}
+		return false;
+	}
+	
+	public boolean insertBranchTable(String name, String address) throws SQLException {
+		Connection cnn = null;
+		try {
+			Class.forName(driver);
+			cnn = DriverManager.getConnection(url,username,pwd);
+			cnn.setAutoCommit(false);
+			String sql = "insert into tbl_library_branch (branchName,branchAddress) value(?,?)";
+			PreparedStatement pstate = cnn.prepareStatement(sql);
+			pstate.setString(1, name);
+			pstate.setString(2, address);
+			pstate.execute();
+			return true;
+		} catch (ClassNotFoundException | SQLException e) {
+			e.printStackTrace();
+			if(cnn!=null) {
+				cnn.rollback();
+				System.out.println("DB eror, roll back!");
+			}
+		} finally {
+			if(cnn != null) {
+				cnn.commit();
+				System.out.println("Branch table inserted!");
+				cnn.close();
+				System.out.println("DB closed!");
+			}
+		}
+		return false;
 	}
 	
 	public boolean insertAuthor(String name) throws SQLException {
@@ -350,7 +605,7 @@ public class Helper {
 		}
 		return null;
 	}
-
+	
 	public boolean insertBookGenreTable(Book book) throws SQLException {
 		Connection cnn = null;
 		try {
@@ -472,7 +727,7 @@ public class Helper {
 	 * @return genre list
 	 * @throws SQLException
 	 */
-	public LinkedList<Genre> getGenreList() throws SQLException {
+	public LinkedList<Genre> getGenreList(int n) throws SQLException {
 		LinkedList<Genre> list = new LinkedList<Genre>();
 		Connection cnn = null;
 		try {
@@ -492,7 +747,11 @@ public class Helper {
 				list.add(temp);
 				System.out.println(index + ") " + temp.getName());
 			}
-			System.out.println((index+1)+") new genre" );
+			if(n == 1) {
+				System.out.println((index+1)+") go back");
+			}else {
+				System.out.println((index+1)+") new genre" );
+			}
 		} catch (ClassNotFoundException | SQLException e) {
 			e.printStackTrace();
 			if(cnn != null) {
@@ -507,7 +766,36 @@ public class Helper {
 		return list;
 	}
 	
-	public LinkedList<Author> getAuthorList() throws SQLException {
+	public void updateBookGenreTable(int gId, int bookId) throws SQLException {
+		Connection cnn = null;
+		ResultSet rs = null;
+		try {
+			Class.forName(driver);
+			cnn = DriverManager.getConnection(url,username,pwd);
+			cnn.setAutoCommit(false);
+			String sql = "update tbl_book_genres set genre_id = ? where bookId = ?";
+			PreparedStatement pstate = cnn.prepareStatement(sql);;
+			pstate.setInt(1, gId);
+			pstate.setInt(2, bookId);
+			pstate.execute();
+			pstate.execute();
+		} catch (ClassNotFoundException | SQLException e) {
+			e.printStackTrace();
+			if(cnn != null) {
+				cnn.rollback();
+				System.out.println("DB Roll Back due to error! Back to previous Menu!");
+			}
+		} finally {
+			if(cnn != null) {
+				cnn.commit();
+				System.out.println("inserted into genre table");
+				cnn.close();
+				System.out.println("DB connection closed");
+			}
+		}
+	}
+	
+	public LinkedList<Author> getAuthorList(int n) throws SQLException {
 		LinkedList<Author> list = new LinkedList<Author>();
 		Connection cnn = null;
 		try {
@@ -527,7 +815,11 @@ public class Helper {
 				list.add(temp);
 				System.out.println(index + ") " + temp.getName());
 			}
-			System.out.println((index+1)+") new author" );
+			if(n == 1) {
+				System.out.println((index+1)+") go back!");
+			}else {
+				System.out.println((index+1)+") new author" );
+			}
 		} catch (ClassNotFoundException | SQLException e) {
 			e.printStackTrace();
 			if(cnn != null) {
@@ -540,5 +832,32 @@ public class Helper {
 			}
 		}
 		return list;
+	}
+	
+	public Borrower validateCardNo(int choice) throws SQLException {
+		Connection cnn = null;
+		ResultSet rs = null;
+		Borrower borrower = new Borrower();;
+		try {
+			Class.forName(driver);
+			cnn = DriverManager.getConnection(url,username,pwd);
+			PreparedStatement pstate = cnn.prepareStatement("select * from tbl_borrower where cardNo = ?");
+			pstate.setInt(1, choice);
+			rs = pstate.executeQuery();	
+			if(rs.next()) {
+				borrower.setBorrowerId(rs.getInt(1));
+				borrower.setName(rs.getString(2));
+				borrower.setAddress(rs.getString(3));
+				return borrower;
+			}
+		} catch (ClassNotFoundException | SQLException e) {
+			e.printStackTrace();
+		} finally {
+			if(cnn != null) {
+				cnn.close();
+				System.out.println("DB connection closed");
+			}
+		}
+		return null;
 	}
 }

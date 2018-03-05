@@ -23,7 +23,7 @@ public class Main {
 	public static AdminController adminController = new AdminController();
 	
 	private static final String driver = "com.mysql.cj.jdbc.Driver";
-	private static final String url = "jdbc:mysql://localhost/library";
+	private static final String url = "jdbc:mysql://localhost/library?useSSL=false";
 	private static final String username = "root";
 	private static final String pwd = "wu134679";
 	

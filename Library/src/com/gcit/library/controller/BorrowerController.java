@@ -42,7 +42,6 @@ public class BorrowerController {
 	private LinkedList<Branch> branchList;
 	private LinkedList<Book> bookList = new LinkedList<Book>();
 	private LinkedList<Loan> loanList = new LinkedList<Loan>();
-	private LibrarianController librarianController;
 	
 	public void BorrowerMainMenu() throws SQLException {
 		while (true) {
@@ -62,45 +61,16 @@ public class BorrowerController {
 					Main.sc.next();
 				}
 			}
-			validateCardNo();
-		}
-	}
-	/**
-	 * validate the card number from input
-	 * @throws SQLException
-	 */
-	public void validateCardNo() throws SQLException {
-		Connection cnn = null;
-		ResultSet rs = null;
-		try {
-			Class.forName(driver);
-			cnn = DriverManager.getConnection(url,username,pwd);
-			PreparedStatement pstate = cnn.prepareStatement("select * from tbl_borrower where cardNo = ?");
-			pstate.setInt(1, choice);
-			rs = pstate.executeQuery();	
-		} catch (ClassNotFoundException | SQLException e) {
-			e.printStackTrace();
-		} finally {
-			if(cnn != null) {
-				if(!rs.next()) {
-					System.out.println("Invalid card number");
-					cnn.close();
-					System.out.println("DB connection closed");
-					return;
-				}else {
-					borrower = new Borrower();
-					librarianController = new LibrarianController();
-					borrower.setBorrowerId(rs.getInt(1));
-					borrower.setName(rs.getString(2));
-					borrower.setAddress(rs.getString(3));
-					//System.out.println(borrower.toString());
-					cnn.close();
-					System.out.println("DB connection closed");
-					borrowerOp();
-				}
+			borrower = helper.validateCardNo(choice);
+			if(borrower == null) {
+				System.out.println("Card number does not exist! Try again");
+			}else {
+				break;
 			}
 		}
+		borrowerOp();
 	}
+	
 	/**
 	 * when user input valid card number, proceed to this step
 	 * @throws SQLException
@@ -156,49 +126,10 @@ public class BorrowerController {
 	 * @throws SQLException
 	 */
 	public void checkOutBooks() throws SQLException {
-		Connection cnn = null;
-		bookList.clear();
-		try {
-			Class.forName(driver);
-			cnn = DriverManager.getConnection(url,username,pwd);
-			cnn.setAutoCommit(false);
-			String sql = "select \n" + 
-					"	tbl_book_copies.bookId,\n" + 
-					"    tbl_book_copies.branchId,\n" +
-					"    tbl_book.title,\n" + 
-					"    tbl_book_copies.noOfCopies\n" + 
-					"from tbl_book_copies\n" + 
-					"join tbl_book on tbl_book.bookId = tbl_book_copies.bookId\n" + 
-					"where tbl_book_copies.branchId = ?;";
-			PreparedStatement pstate = cnn.prepareStatement(sql);
-			pstate.setInt(1, branch.getId());
-			ResultSet rs = pstate.executeQuery();
-			Book book;
-			int index = 0;
-			while(rs.next()) {
-				index ++;
-				book = new Book();
-				book.setBookId(rs.getInt(1));
-				book.setBranchId(rs.getInt(2));
-				book.setTitle(rs.getString(3));
-				book.setNumOfCopies(rs.getInt(4));
-				System.out.println(index + ") " + book.getTitle() + ", copies left: " + book.getNumOfCopies());
-				bookList.add(book);
-			}
-			System.out.println((bookList.size()+1) + ") go back");
-		} catch (ClassNotFoundException | SQLException e) {
-			e.printStackTrace();
-			if(cnn != null) {
-				cnn.rollback();
-				System.out.println("DB Roll Back due to error! Back to previous Menu!");
-				return;
-			}
-		} finally {
-			if(cnn != null) {
-				cnn.commit();
-				cnn.close();
-				System.out.println("DB connection closed");
-			}
+		bookList = helper.getBooksForBorrower(branch, borrower);
+		if(bookList == null) {
+			System.out.println("There is no book from this branch!");
+			return;
 		}
 		System.out.println("Which book you want to check out?");
 		book = helper.getChoices(bookList);

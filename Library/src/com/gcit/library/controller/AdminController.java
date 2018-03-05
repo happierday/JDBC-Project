@@ -38,6 +38,7 @@ public class AdminController {
 	private Publisher pub;
 	private Branch branch;
 	private Book book;
+	private Author author;
 	
 	private Helper helper = new Helper();
 	private LinkedList<Loan> loanList = new LinkedList<Loan>();
@@ -459,41 +460,7 @@ public class AdminController {
 			if(phone.matches(phoneRegEx)) break;
 			else System.out.println("Try again!");
 		}
-		addBorrowerUpdate(name,address,helper.formatePhone(phone));
-	}
-	/**
-	 * update the borrower table with the new entry(insert)
-	 * @param name
-	 * @param address
-	 * @param phone
-	 * @throws SQLException 
-	 */
-	private void addBorrowerUpdate(String name, String address, String phone) throws SQLException {
-		Connection cnn = null;
-		try {
-			Class.forName(driver);
-			cnn = DriverManager.getConnection(url,username,pwd);
-			cnn.setAutoCommit(false);
-			String sql = "insert into tbl_borrower (name,address,phone) value(?,?,?)";
-			PreparedStatement pstate = cnn.prepareStatement(sql);
-			pstate.setString(1, name);
-			pstate.setString(2, address);
-			pstate.setString(3, phone);
-			pstate.execute();	
-		} catch (ClassNotFoundException | SQLException e) {
-			e.printStackTrace();
-			if(cnn!=null) {
-				cnn.rollback();
-				System.out.println("DB eror, roll back!");
-			}
-		} finally {
-			if(cnn != null) {
-				cnn.commit();
-				System.out.println("Borrower table inserted!");
-				cnn.close();
-				System.out.println("DB closed!");
-			}
-		}
+		helper.insertBorrowerTable(name,address,helper.formatePhone(phone));
 	}
 	
 	/**
@@ -624,43 +591,9 @@ public class AdminController {
 			if(phone.matches(phoneRegEx)) break;
 			else System.out.println("Try again!");
 		}
-		addPulisherUpdate(name,address,helper.formatePhone(phone));
+		helper.insertPublisherTable(name,address,helper.formatePhone(phone));
 	}
-	/**
-	 * insert date into publisher table
-	 * @param name
-	 * @param address
-	 * @param phone
-	 * @throws SQLException
-	 */
-	private void addPulisherUpdate(String name, String address, String phone) throws SQLException {
-		Connection cnn = null;
-		try {
-			Class.forName(driver);
-			cnn = DriverManager.getConnection(url,username,pwd);
-			cnn.setAutoCommit(false);
-			String sql = "insert into tbl_publisher (publisherName,publisherAddress,publisherPhone) value(?,?,?)";
-			PreparedStatement pstate = cnn.prepareStatement(sql);
-			pstate.setString(1, name);
-			pstate.setString(2, address);
-			pstate.setString(3, phone);
-			pstate.execute();	
-		} catch (ClassNotFoundException | SQLException e) {
-			e.printStackTrace();
-			if(cnn!=null) {
-				cnn.rollback();
-				System.out.println("DB eror, roll back!");
-			}
-		} finally {
-			if(cnn != null) {
-				cnn.commit();
-				System.out.println("Borrower table inserted!");
-				cnn.close();
-				System.out.println("DB closed!");
-			}
-		}
-	}
-
+	
 	/**
 	 * when press 3
 	 * @throws SQLException 
@@ -771,40 +704,7 @@ public class AdminController {
 		name = Main.sc.nextLine();
 		System.out.println("Enter branch address");
 		address = Main.sc.nextLine();
-		addBranchUpdate(name,address);
-	}
-	
-	/**
-	 * insert into branch table and update
-	 * @param name
-	 * @param address
-	 * @throws SQLException
-	 */
-	private void addBranchUpdate(String name, String address) throws SQLException {
-		Connection cnn = null;
-		try {
-			Class.forName(driver);
-			cnn = DriverManager.getConnection(url,username,pwd);
-			cnn.setAutoCommit(false);
-			String sql = "insert into tbl_library_branch (branchName,branchAddress) value(?,?)";
-			PreparedStatement pstate = cnn.prepareStatement(sql);
-			pstate.setString(1, name);
-			pstate.setString(2, address);
-			pstate.execute();	
-		} catch (ClassNotFoundException | SQLException e) {
-			e.printStackTrace();
-			if(cnn!=null) {
-				cnn.rollback();
-				System.out.println("DB eror, roll back!");
-			}
-		} finally {
-			if(cnn != null) {
-				cnn.commit();
-				System.out.println("Branch table inserted!");
-				cnn.close();
-				System.out.println("DB closed!");
-			}
-		}
+		helper.insertBranchTable(name,address);
 	}
 
 	public void bookAuthorAction() throws SQLException {
@@ -874,8 +774,124 @@ public class AdminController {
 		}
 	}
 
-	private void editBookAuthor() {
-		// TODO Auto-generated method stub
+	private void editBookAuthor() throws SQLException {
+		System.out.println("1) edit book \n" + "2) edit author\n");
+		choice = 0;
+		while(true) {
+			if(choice!=0) {
+				break;
+			}
+			switch(Main.sc.next()) {
+				case "1":
+					choice = 1;
+					break;
+				case "2":
+					choice = 2;
+					break;
+				default:
+					System.out.println("Please enter a number from 1 to 2");
+			}
+		}
+		if(choice == 1) {
+			editBook();
+		}else {
+			editAuthor();
+		}
+	}
+
+	private void editAuthor() throws SQLException {
+		authorList = helper.getAuthorList(1);
+		if(authorList == null) {
+			System.out.println("There are no authors");
+			return;
+		}
+		choice = helper.getChoiceIndex(authorList);
+		if(choice == authorList.size()+1) {
+			return;
+		}
+		author = authorList.get(choice-1);
+		Main.sc.nextLine();
+		System.out.println("Please enter the new name: ");
+		String name = Main.sc.nextLine();
+		helper.updateTable("tbl_author", "authorName", name, "authorId", author.getId());
+	}
+
+	private void editBook() throws SQLException {
+		bookList = helper.getBookAuthorList();
+		if(bookList == null) {
+			System.out.println("No book for edit!");
+			return;
+		}
+		book = helper.getChoices(bookList);
+//		System.out.println("1) edit book title \n" + "2) edit genre \n"
+//				 + "3) edit author \n"
+//				 + "4) edit publisher \n"
+//				 + "5) edit branch \n"
+//				 + "6) go back \n");
+//		choice = 0;
+//		while(true) {
+//			if(choice!=0) {
+//				break;
+//			}
+//			switch(Main.sc.next()) {
+//				case "1":
+//					choice = 1;
+//					break;
+//				case "2":
+//					choice = 2;
+//					break;
+//				case "3":
+//					choice = 3;
+//					break;
+//				case "4":
+//					choice = 4;
+//					break;
+//				case "5":
+//					choice = 5;
+//					break;
+//				case "6":
+//					return;
+//				default:
+//					System.out.println("Please enter a number from 1 to 6");
+//			}
+//		}
+//		System.out.println(choice);
+		editBookTitle();
+//		switch(choice) {
+//			case 1:
+//				editBookTitle();
+//				break;
+//			case 2:
+//				editGenre();
+//				break;
+//			case 3:
+//				choice = 3;
+//			case 4:
+//				choice = 4;
+//			case 5:
+//				choice = 5;
+//		}
+	}
+
+	private void editGenre() throws SQLException {
+		gList = helper.getGenreList(1);
+		if(gList == null) {
+			System.out.println("There is no genre!");
+			return;
+		}
+		//TODO genre id might not be the its idnex in the list
+		System.out.println(book.getTitle()+ "'s genre is " + gList.get(book.getGenreId()).getName());
+		System.out.println("Which genre you want to change to: ");
+		choice = helper.getChoiceIndex(gList);
+		if(choice == gList.size()+1) return;
+		helper.updateBookGenreTable(gList.get(choice-1).getId(), book.getBookId());
+	}
+
+	private void editBookTitle() throws SQLException {
+		Main.sc.nextLine();
+		System.out.println("Enter the new title: ");
+		String title = Main.sc.nextLine();
+		helper.updateTable("tbl_book", "title",title , "bookId", book.getBookId());
 	}
 
 	private void addBookAuthor() throws SQLException {
@@ -931,7 +947,7 @@ public class AdminController {
 			if(tempBook.getGenreId() > 0) {
 				break;
 			}
-			gList = helper.getGenreList();
+			gList = helper.getGenreList(0);
 			System.out.println("Choosing from existing genre or make a new one: ");
 			choice = helper.getChoiceIndex(gList);
 			if(choice <= gList.size()) {
@@ -946,7 +962,7 @@ public class AdminController {
 			if(tempBook.getAuthorId() > 0) {
 				break;
 			}
-			authorList = helper.getAuthorList();
+			authorList = helper.getAuthorList(0);
 			choice = helper.getChoiceIndex(authorList);
 			if (choice <= authorList.size()) {
 				tempBook.setAuthorId(authorList.get(choice - 1).getId());
@@ -1003,13 +1019,14 @@ public class AdminController {
 		/*
 		 * Ready to insert book
 		 */
-		//get book id from the insertino
+		//get book object with book id from the insertion
 		book = helper.insertBook(tempBook);
+		//TODO what if last one failed, need to roll back all
 		if(book != null) {
 			if(helper.insertBookAuthorTable(book)) {
 				if(helper.insertBookCopyTable(book)) {
 					if(helper.insertBookGenreTable(book)) {
-						
+						System.out.println("Book Inserted");
 					}
 				}
 			}
