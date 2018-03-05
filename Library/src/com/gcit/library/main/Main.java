@@ -5,9 +5,9 @@ package com.gcit.library.main;
 import java.sql.SQLException;
 import java.util.Scanner;
 
-import com.gict.library.controller.AdminController;
-import com.gict.library.controller.BorrowerController;
-import com.gict.library.controller.LibrarianController;
+import com.gcit.library.controller.AdminController;
+import com.gcit.library.controller.BorrowerController;
+import com.gcit.library.controller.LibrarianController;
 
 /**
  * @author jianwu

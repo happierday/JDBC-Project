@@ -1,7 +1,7 @@
 /**
  * 
  */
-package com.gict.library.controller;
+package com.gcit.library.controller;
 
 import java.sql.Connection;
 import java.sql.Date;
