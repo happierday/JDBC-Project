@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.LinkedList;
 
+import com.gcit.library.helper.Helper;
 import com.gcit.library.main.Main;
 import com.gcit.library.model.Book;
 import com.gcit.library.model.Borrower;
@@ -28,12 +29,16 @@ public class BorrowerController {
 	private String driver = Main.getDriver();
 	private String username = Main.getUsername();
 	private String pwd = Main.getPwd();
-	private boolean backToMain = false;
+	
 	private int choice = 0;
+	
 	private Borrower borrower;
 	private Branch branch;
 	private Book book;
 	private Loan loan;
+	private boolean backToMain = false;
+	
+	private Helper helper = new Helper();
 	private LinkedList<Branch> branchList;
 	private LinkedList<Book> bookList = new LinkedList<Book>();
 	private LinkedList<Loan> loanList = new LinkedList<Loan>();
@@ -41,6 +46,9 @@ public class BorrowerController {
 	
 	public void BorrowerMainMenu() throws SQLException {
 		while (true) {
+			if(backToMain) {
+				return;
+			}
 			choice = 0;
 			System.out.println("Enter the your Card Number: ");
 			while (true) {
@@ -55,12 +63,12 @@ public class BorrowerController {
 				}
 			}
 			validateCardNo();
-			if(backToMain) {
-				break;
-			}
 		}
 	}
-	
+	/**
+	 * validate the card number from input
+	 * @throws SQLException
+	 */
 	public void validateCardNo() throws SQLException {
 		Connection cnn = null;
 		ResultSet rs = null;
@@ -93,7 +101,10 @@ public class BorrowerController {
 			}
 		}
 	}
-	
+	/**
+	 * when user input valid card number, proceed to this step
+	 * @throws SQLException
+	 */
 	public void borrowerOp() throws SQLException {
 		while(true) {
 			choice = 0;
@@ -126,32 +137,15 @@ public class BorrowerController {
 		}
 	}
 
+	/**
+	 * when user decided to check out a book from borrowerOp function
+	 * @throws SQLException
+	 */
 	public void borrowerOp1() throws SQLException {
-		librarianController.getLibraryBranch();
-		branchList = librarianController.getBranchList();
-		choice = 0;
-		int size = branchList.size();
-		while(true) {
-			if(choice > 0) {
-				break;
-			}
-			if(Main.sc.hasNextInt()) {
-				choice = Main.sc.nextInt();
-				if(choice > 0 && choice < size+1) {
-					branch = branchList.get(choice-1);
-					break;
-				}else if(choice == size+1){
-					//if choose to go back, clean up list and librarian
-					branchList.clear();
-					return;
-				}else {
-					choice = 0;
-					System.out.println("Please enter a number between 1 and " + (size+1)+ "!");
-				}
-			}else {
-				System.out.println("Please enter a number!");
-				Main.sc.next();
-			}
+		branchList = helper.getBranchList();
+		branch = helper.getChoices(branchList);
+		if(branch == null) {
+			return;
 		}
 		checkOutBooks();
 	}
@@ -206,31 +200,10 @@ public class BorrowerController {
 				System.out.println("DB connection closed");
 			}
 		}
-		int n;
-		int size = bookList.size();
 		System.out.println("Which book you want to check out?");
-		choice = 0;
-		while(true) {
-			if(choice > 0) {
-				break;
-			}
-			if(Main.sc.hasNextInt()) {
-				choice = Main.sc.nextInt();
-				if(choice > 0 && choice < size+1) {
-					book = bookList.get(choice-1);
-					break;
-				}else if(choice == size+1){
-					//if choose to go back, clean up list and librarian
-					bookList.clear();
-					return;
-				}else {
-					choice = 0;
-					System.out.println("Please enter a number between 1 and " + (size+1)+ "!");
-				}
-			}else {
-				System.out.println("Please enter a number!");
-				Main.sc.next();
-			}
+		book = helper.getChoices(bookList);
+		if(book == null) {
+			return;
 		}
 		if(alreadyBorrowwed()) {
 			System.out.println("You can't borrow same book from same branch again!");
@@ -357,25 +330,19 @@ public class BorrowerController {
 	 * @throws SQLException
 	 */
 	public void borrowerOp2() throws SQLException {
-		librarianController.getLibraryBranch();
-		branchList = librarianController.getBranchList();
-		int n;
-		while(true) {
-			n = Main.sc.nextInt();
-			if(n > 0 && n <= branchList.size()+1) {
-				if(n == branchList.size()+1) {
-					return;
-				}else {
-					branch = branchList.get(n-1);
-					checkInBooks();
-				}
-				return;
-			}else {
-				System.out.println("Please enter a number from 1 to " + (branchList.size()+1));
-			}
+		branchList = helper.getBranchList();
+		branch = helper.getChoices(branchList);
+		if(branch == null) {
+			return;
 		}
+		checkInBooks();
 	}
-	
+	/**
+	 * validate if cardNo has borrow the book and didn't return, then user 
+	 * can perform return action, otherwise, go back.
+	 * @return
+	 * @throws SQLException
+	 */
 	public boolean hasBorrowwed() throws SQLException {
 		loanList.clear();
 		Connection cnn = null;
@@ -396,6 +363,7 @@ public class BorrowerController {
 				rs.previous();
 				Loan loan;
 				int index = 0;
+				System.out.println("You borrowwed these books from "+ branch.getBranchName()+": ");
 				while(rs.next()) {
 					index++;
 					loan = new Loan();
@@ -404,7 +372,6 @@ public class BorrowerController {
 					loan.setCardNo(rs.getInt(3));
 					loan.setBookTitle(rs.getString(4));
 					loanList.add(loan);
-					System.out.println("You borrowwed these books: ");
 					System.out.println(index + ") " + loan.getBookTitle());
 				}
 				index++;
@@ -436,29 +403,9 @@ public class BorrowerController {
 	 */
 	public void checkInBooks() throws SQLException {
 		if(hasBorrowwed()) {
-			choice = 0;
-			int size = loanList.size();
-			while(true) {
-				if(choice > 0) {
-					break;
-				}
-				if(Main.sc.hasNextInt()) {
-					choice = Main.sc.nextInt();
-					if(choice > 0 && choice < size+1) {
-						loan = loanList.get(choice-1);
-						break;
-					}else if(choice == size+1){
-						//if choose to go back, clean up list and librarian
-						loanList.clear();
-						return;
-					}else {
-						choice = 0;
-						System.out.println("Please enter a number between 1 and " + (size+1)+ "!");
-					}
-				}else {
-					System.out.println("Please enter a number!");
-					Main.sc.next();
-				}
+			loan = helper.getChoices(loanList);
+			if(loan == null) {
+				return;
 			}
 			checkInUpdate();
 		}else {
@@ -501,7 +448,7 @@ public class BorrowerController {
 		} finally {
 			if(cnn != null) {
 				cnn.commit();
-				System.out.println("Updated!");
+				System.out.println("Date in Updated!");
 				cnn.close();
 				System.out.println("DB connection closed");
 			}

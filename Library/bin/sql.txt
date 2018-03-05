@@ -21,3 +21,8 @@ select book.title, borrower.name,branch.branchName, loans.dueDate from tbl_book_
 join tbl_book book on book.bookId = loans.bookId
 join tbl_library_branch branch on branch.branchId = loans.branchId
 join tbl_borrower borrower on borrower.cardNo = loans.cardNo; 
+
+get bookANDauthor
+select book.bookId, book.title , authors.authorId, author.authorName from tbl_book book\n" + 
+"join tbl_book_authors authors on book.bookId = authors.bookId\n" + 
+"join tbl_author author on author.authorId = authors.authorId;

@@ -11,6 +11,13 @@ public class Borrower {
 	private int borrowerId;
 	private String name;
 	private String address;
+	private String phoneNum;
+	public String getPhoneNum() {
+		return phoneNum;
+	}
+	public void setPhoneNum(String phoneNum) {
+		this.phoneNum = phoneNum;
+	}
 	public int getBorrowerId() {
 		return borrowerId;
 	}

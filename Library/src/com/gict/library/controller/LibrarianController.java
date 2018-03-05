@@ -10,6 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.LinkedList;
 
+import com.gcit.library.helper.Helper;
 import com.gcit.library.main.Main;
 import com.gcit.library.model.Book;
 import com.gcit.library.model.Branch;
@@ -24,9 +25,13 @@ public class LibrarianController {
 	
 	private Librarian librarian;
 	private Branch branch;
+	private Book book;
+	
+	private Helper helper = new Helper();
 	private LinkedList<Branch> branchList = new LinkedList<Branch>();
 	private LinkedList<Book> bookList = new LinkedList<Book>();
 	private int choice;
+	
 	private String url = Main.getUrl();
 	private String driver = Main.getDriver();
 	private String username = Main.getUsername();
@@ -57,75 +62,63 @@ public class LibrarianController {
 			}
 		}
 	}
-	/**
+	/** when user press 1 in Main Menu
 	 * Select statement(Mysql), no need to call cnn.rollback()
 	 * @throws SQLException
 	 */
 	
 	public void LibrarianOp1() throws SQLException {
 		while(true) {
-			getLibraryBranch();
-			int size = branchList.size();
-			choice = 0;
-			while(true) {
-				if(choice > 0) {
-					break;
-				}
-				if(Main.sc.hasNextInt()) {
-					choice = Main.sc.nextInt();
-					if(choice > 0 && choice <= size) {
-						librarian.setBranchIndex(choice-1);
-						branch = branchList.get(choice-1);
-						break;
-					}else if(choice == size+1){
-						//if choose to go back, clean up list and librarian
-						librarian = null;
-						branchList.clear();
-						return;
-					}else {
-						choice = 0;
-						System.out.println("Please enter a number between 1 and " + (size+1)+ "!");
-					}
-				}else {
-					System.out.println("Please enter a number!");
-					Main.sc.next();
-				}
-			}
-			LibrarianOp2();
-		}
-	}
-	
-	public void getLibraryBranch() throws SQLException {
-		Connection cnn = null;
-		branchList.clear();
-		try {
-			Class.forName(driver);
-			cnn = DriverManager.getConnection(url,username,pwd);
-			PreparedStatement pstate = cnn.prepareStatement("select * from tbl_library_branch");
-			ResultSet rs = pstate.executeQuery();
-			Branch branch;
-			while(rs.next()) {
-				branch = new Branch();
-				branch.setId(rs.getInt(1));
-				branch.setBranchName(rs.getString(2));
-				branch.setAddress(rs.getString(3));
-				System.out.println(branch.toString());
-				branchList.add(branch);
-			}
-			System.out.println((branchList.size()+1) + ") go back");
-		} catch (ClassNotFoundException | SQLException e) {
-			e.printStackTrace();
-		} finally {
-			if(cnn != null) {
-				cnn.close();
-				System.out.println("DB connection closed");
+			branchList = helper.getBranchList();
+			branch = helper.getChoices(branchList);
+			if(branch == null) {
+				return;
+			}else {
+				LibrarianOp2();
 			}
 		}
 	}
-	
+	/**
+	 * get library branches.
+	 * @throws SQLException
+	 */
+	//TODO move this to helper class
+//	public void getLibraryBranch() throws SQLException {
+//		Connection cnn = null;
+//		branchList.clear();
+//		try {
+//			Class.forName(driver);
+//			cnn = DriverManager.getConnection(url,username,pwd);
+//			PreparedStatement pstate = cnn.prepareStatement("select * from tbl_library_branch");
+//			ResultSet rs = pstate.executeQuery();
+//			Branch branch;
+//			while(rs.next()) {
+//				branch = new Branch();
+//				branch.setId(rs.getInt(1));
+//				branch.setBranchName(rs.getString(2));
+//				branch.setAddress(rs.getString(3));
+//				System.out.println(branch.toString());
+//				branchList.add(branch);
+//			}
+//			System.out.println((branchList.size()+1) + ") go back");
+//		} catch (ClassNotFoundException | SQLException e) {
+//			e.printStackTrace();
+//		} finally {
+//			if(cnn != null) {
+//				cnn.close();
+//				System.out.println("DB connection closed");
+//			}
+//		}
+//	}
+	/**
+	 * when user have chosen a branch
+	 * @throws SQLException
+	 */
 	public void LibrarianOp2() throws SQLException {
 		while (true) {
-			System.out.println("1) Update the details of the Library \n" + "2) Add copies of Book to the Branch\n"
+			
+			System.out.println("You are at " + branch.getBranchName() + "branch \n"
+					+ "1) Update the details of the Library \n" + "2) Add copies of Book to the Branch\n"
 					+ "3) Quit to previous\n");
 			choice = 0;
 			while (true) {
@@ -153,7 +146,10 @@ public class LibrarianController {
 		}
 		
 	}
-	
+	/**
+	 * when user chose to edit branch on librarianop2
+	 * @throws SQLException
+	 */
 	public void updateBranch() throws SQLException {
 		String s = "";
 		
@@ -196,7 +192,6 @@ public class LibrarianController {
 			if(cnn != null) {
 				cnn.rollback();
 				System.out.println("DB Roll Back due to error! Back to previous Menu!");
-				return;
 			}
 		} finally {
 			if(cnn != null) {
@@ -204,12 +199,14 @@ public class LibrarianController {
 				System.out.println("Branch Updated!");
 				cnn.close();
 				System.out.println("DB connection closed");
-				return;
 			}
 		}
 	}
 	
-	
+	/**
+	 * get books from a particular branch user chose
+	 * @throws SQLException
+	 */
 	public void getBooks() throws SQLException {
 		Connection cnn = null;
 		bookList.clear();
@@ -261,26 +258,28 @@ public class LibrarianController {
 			}
 		}
 	}
-	
+	/**
+	 * when user choose to edit book copies from librarianOp2
+	 * @throws SQLException
+	 */
 	public void manageBooks() throws SQLException {
 		System.out.println("Pick the Book you want to add copies of, to your branch: ");
 		getBooks();
-		int n = Main.sc.nextInt();
-		while(true) {
-			if(n <= bookList.size() + 1 && n > 0) {
-				if(n == bookList.size() + 1) {
-					return;
-				}else {
-					updateBook(bookList.get(n-1),n);
-				}
-				return;
-			}else {
-				System.out.println("Please enter a number between 1 to " + (bookList.size() + 1));
-			}
+		book = helper.getChoices(bookList);
+		if(book == null) {
+			return;
+		}else {
+			updateBook();
 		}
 	}
 	
-	public void updateBook(Book book,int index) throws SQLException {
+	/**
+	 * when user choose a specific book from manageBooks
+	 * @param book
+	 * @param index
+	 * @throws SQLException
+	 */
+	public void updateBook() throws SQLException {
 		Connection cnn = null;
 		System.out.println("Existing number of copies for " + book.getTitle() + ": " +
 							book.getNumOfCopies());
